@@ -51,7 +51,14 @@ class MongoDBClient {
         return productos;
      
     }
+    async consulta(coleccion){
 
+        const productosCollection = this.db.collection(coleccion);
+        const productos = await productosCollection.find({}).toArray();
+
+        return productos;
+     
+    }
 
 
     //Abajo estan las funciones que pueden ser modificadas por usted. Si quiere agregar funciones extras como delete y update, no hay problema.
@@ -91,6 +98,31 @@ class MongoDBClient {
         CODIGO AQUI
         >>>>>>>>>>>>>>>>>>>>>>>>
         */
+        try {
+            const collection = this.db.collection(coleccion);
+            const result = await collection.insertMany(model);
+            console.log(`Documentos insertados con éxito en la colección ${coleccion}:`, result.insertedId);
+        } catch (error) {
+            console.error(`Error al insertar el documento en la colección ${coleccion}:`, error);
+        }
+    }
+
+    async update(coleccion,model){
+        try {
+            const collection = this.db.collection(coleccion);
+            const result = await collection.updateOne(
+                {
+                    id:model.id
+                },
+                {
+                    $addToSet:{
+                        games:model.data
+                    }
+                });
+            console.log(`Documento actualizado con éxito en la colección ${coleccion}:`, result.insertedId);
+        } catch (error) {
+            console.error(`Error al insertar el documento en la colección ${coleccion}:`, error);
+        }
     }
 
     /**
@@ -99,26 +131,67 @@ class MongoDBClient {
      */
 
     async consulta1(generos){
-        /**
-        >>>>>>>>>>>>>>>>>>>>>>>>
-        CODIGO AQUI
-        >>>>>>>>>>>>>>>>>>>>>>>>
-        */
-       return []
+        try {
+            const VideojuegoCollection = this.db.collection('Videojuego');
+            // Buscar videojuegos que contengan todos los géneros especificados
+            const resultados = await VideojuegoCollection.find({
+                genres: { $all: generos }
+            }).toArray();
+            
+            return resultados;
+        } catch (error) {
+            console.error('Error en la consulta 1:', error);
+            return [];
+        }
+    
     }
 
     /**
      * Buscar juegos lanzados dentro de un rango de fechas (xx/xx/xxxx -yy/yy/yyyy). de n companias. 
      * 
      */
-
     async consulta2(empresas, fechaInicio, fechaFin){
-        /**
-        >>>>>>>>>>>>>>>>>>>>>>>>
-        CODIGO AQUI
-        >>>>>>>>>>>>>>>>>>>>>>>>
-        */
-        return []
+        try {
+
+            // Función para convertir una fecha en formato dd/mm/yyyy a un objeto Date
+            function convertirFecha(fechaStr) {
+                const [dia, mes, anio] = fechaStr.split('/').map(Number);
+                // Crear la fecha en UTC y ajustar la zona horaria local
+                const fechaUTC = new Date(Date.UTC(anio, mes - 1, dia));
+                // Crear una nueva fecha ajustada a la zona horaria local
+                const fechaLocal = new Date(fechaUTC.getTime() - fechaUTC.getTimezoneOffset() * 60000);
+                return fechaLocal;
+            }
+
+            //Convertir Fechas al formato ISO
+            const fechaInicioDate = convertirFecha(fechaInicio);
+            const fechaFinDate = convertirFecha(fechaFin);
+
+            const empresaCollection = this.db.collection('Empresa');
+        
+            // Obtener los IDs de las empresas a partir de sus nombres
+            const empresasName = await empresaCollection.find({
+                name: { $in: empresas } // Buscar empresas cuyos nombres están en la lista proporcionada
+            }).toArray();
+            
+            // Extraer los IDs de las empresas encontradas
+            const idsEmpresas = empresasName.map(empresa => empresa.id);
+
+            // Obtener la colección de videojuegos
+            const videojuegoCollection = this.db.collection('Videojuego');
+            
+            // Buscar videojuegos dentro del rango de fechas y de las empresas especificadas
+            const resultados = await videojuegoCollection.find({
+                original_release_date: { $gte: fechaInicioDate, $lte: fechaFinDate }, // Filtra por rango de fechas
+                developers: { $in: idsEmpresas } // Filtra por IDs de empresas
+            }).toArray();
+            
+            // Devolver los resultados encontrados
+            return resultados;
+        } catch (error) {
+            console.error('Error en la consulta 2:', error);
+            return [];
+        }
 
     }
 
