@@ -14,14 +14,22 @@ const BASE_URL = process.env.RAWG_API_ENDPOINT;
 const MONGO_URI = process.env.MONGO_URI;
 const MONGO_DB_NAME = process.env.MONGO_DB_NAME;
 
+const NEO4J_URI =process.env.NEO4J_URI;
+const NEO4J_USER = process.env.NEO4J_USER;
+const NEO4J_PASS = process.env.NEO4J_PASS;
+const NEO4J_DB_NAME = process.env.NEO4J_DB_NAME;
+
 const MongoDBClient = require("./servicios/MongoDBClient");
+const Neo4jClient = require("./servicios/Neo4jClient");
 const GameAPI = require("./servicios/GameAPI");
 
 (async () => {
   const mongoClient = new MongoDBClient(MONGO_URI, MONGO_DB_NAME);
+  const neoClient = new Neo4jClient(NEO4J_URI, NEO4J_USER, NEO4J_PASS, NEO4J_DB_NAME);
   const gameAPI = new GameAPI(API_KEY, BASE_URL, PAGE_SIZE);
 
   await mongoClient.connect();
+  await neoClient.connect();
 
   //AYUDA: Ejemplo de como insertar un documento haciendo uso del esquema Producto
 
@@ -102,7 +110,40 @@ const GameAPI = require("./servicios/GameAPI");
 
     console.log("Datos guardados exitosamente");
   }
-  await loadData();
+
+  async function createNeo4jSchema() {
+    await neoClient.delete();
+    //create schema neo4j from mongodb database
+
+    let gen = await mongoClient.obtenerGeneros();
+    for (let index = 0; index < gen.length; index++) {
+      await neoClient.insertarGenero(gen[index]["generos"]);
+    }
+    console.log("insertar Genero");
+
+    let juegos = await mongoClient.obtenerTodosJuegos();
+    for (let index = 0; index < juegos.length; index++) {
+      await neoClient.insertarJuego(juegos[index]["nombre"]);
+    }
+    console.log("insertar Juegos");
+
+    let empresas = await mongoClient.obtenerEmpresas();
+    for (let index = 0; index < empresas.length; index++) {
+      await neoClient.insertarEmpresa(empresas[index]["nombre"]);
+    }
+    console.log("insertar Empresa");
+
+    let plat = await mongoClient.obtenerPlataformas();
+    for (let index = 0; index < plat.length; index++) {
+      await neoClient.insertarPlataforma(plat[index]["nombre"]);
+    }
+    console.log("insertar Plataformas");
+
+
+    //relaciones
+  }
+  //await loadData();
+  await createNeo4jSchema();
   // >>>>>>>>>>>>
 
   await mongoClient.close();

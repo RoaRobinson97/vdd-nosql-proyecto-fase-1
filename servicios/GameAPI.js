@@ -27,6 +27,7 @@ class GameAPI {
 
     try {
       for (let i = 1; i <= maxPage; ++i) {
+        console.log(`${this.baseUrl}games`);
         const response = await axios.get(`${this.baseUrl}games`, {
           params: {
             key: this.apiKey,

@@ -68,10 +68,10 @@ class MongoDBClient {
     try {
       const collection = this.db.collection(coleccion);
       const result = await collection.insertOne(model.toObject());
-      console.log(
+      /*console.log(
         `Documento insertado con éxito en la colección ${coleccion}:`,
         result.insertedId
-      );
+      );*/
     } catch (error) {
       console.error(
         `Error al insertar el documento en la colección ${coleccion}:`,
@@ -90,10 +90,10 @@ class MongoDBClient {
     try {
       const collection = this.db.collection(coleccion);
       const result = await collection.insertMany(models);
-      console.log(
+      /*console.log(
         `Documentos insertados con éxito en la colección ${coleccion}:`,
         result.insertedIds
-      );
+      );*/
       return result.insertedIds;
     } catch (error) {
       console.error(
@@ -107,6 +107,40 @@ class MongoDBClient {
    * Dado n géneros, buscar los juegos que contengan todos esos géneros.
    *
    */
+  async obtenerTodosJuegos() {
+    const videojuegosCollection = this.db.collection("Videojuegos");
+    const videojuegos = await videojuegosCollection
+      .find()
+      .toArray();
+    return videojuegos;
+  }
+
+  async obtenerEmpresas() {
+    const empresasCollection = this.db.collection("Empresas");
+    const empresas = await empresasCollection
+      .find()
+      .toArray();
+    return empresas;
+  }
+
+  async obtenerPlataformas() {
+    const plataformasCollection = this.db.collection("Plataformas");
+    const plat = await plataformasCollection
+      .find()
+      .toArray();
+    return plat;
+  }
+
+  async obtenerGeneros() {
+    const genColl = this.db.collection("Videojuegos");
+    const gen = await genColl
+      .aggregate(
+        { $unwind: "$generos" },
+        { $group: { _id: "$generos" } },
+        { $project: { _id: 0, genero: "$_id" } }
+      )
+    return gen.toArray();
+  }
 
   async consulta1(generos) {
     const videojuegosCollection = this.db.collection("Videojuegos");
